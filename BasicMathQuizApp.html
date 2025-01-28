@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Math Quest</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Roboto', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .game-container {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2rem;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            width: 90%;
+            max-width: 600px;
+            text-align: center;
+        }
+
+        .header {
+            margin-bottom: 2rem;
+        }
+
+        .score-board {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+            font-size: 1.2rem;
+        }
+
+        .question-box {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 2rem;
+            border-radius: 15px;
+            margin: 1.5rem 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .question {
+            font-size: 3rem;
+            margin: 1rem 0;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .options {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+
+        .option-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 1rem;
+            border-radius: 10px;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .option-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .timer {
+            height: 5px;
+            background: rgba(255, 255, 255, 0.2);
+            margin: 1rem 0;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .timer-progress {
+            height: 100%;
+            background: #00ff88;
+            width: 100%;
+            transition: width 0.1s linear;
+        }
+
+        .correct {
+            background: #00ff88 !important;
+            color: #1e3c72 !important;
+        }
+
+        .wrong {
+            background: #ff4646 !important;
+        }
+
+        .game-over {
+            animation: gameOver 0.5s ease;
+        }
+
+        @keyframes gameOver {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .difficulty-btns {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin: 1rem 0;
+        }
+
+        .difficulty-btn {
+            padding: 0.5rem 1rem;
+            border-radius: 25px;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .easy { background: #00ff88; color: #1e3c72; }
+        .medium { background: #ffd700; color: #1e3c72; }
+        .hard { background: #ff4646; color: white; }
+
+        .pulse {
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="header">
+            <h1>🎮 Math Quest</h1>
+            <p>Test your math skills!</p>
+        </div>
+        
+        <div class="difficulty-btns">
+            <button class="difficulty-btn easy" onclick="setDifficulty('easy')">Easy</button>
+            <button class="difficulty-btn medium" onclick="setDifficulty('medium')">Medium</button>
+            <button class="difficulty-btn hard" onclick="setDifficulty('hard')">Hard</button>
+        </div>
+
+        <div class="score-board">
+            <div>Score: <span id="score">0</span></div>
+            <div>High Score: <span id="highscore">0</span></div>
+        </div>
+
+        <div class="question-box">
+            <div class="timer">
+                <div class="timer-progress"></div>
+            </div>
+            <div class="question" id="question">3 + 5</div>
+            <div class="options" id="options"></div>
+        </div>
+    </div>
+
+    <script>
+        let score = 0;
+        let highScore = 0;
+        let timeLeft = 10;
+        let timerId;
+        let difficulty = 'easy';
+
+        const operators = {
+            easy: ['+', '-'],
+            medium: ['+', '-', '*'],
+            hard: ['+', '-', '*', '/']
+        };
+
+        function setDifficulty(level) {
+            difficulty = level;
+            document.querySelectorAll('.difficulty-btn').forEach(btn => 
+                btn.classList.remove('pulse'));
+            document.querySelector(`.${level}`).classList.add('pulse');
+            startNewRound();
+        }
+
+        function generateQuestion() {
+            let num1, num2, operator;
+            const ops = operators[difficulty];
+            operator = ops[Math.floor(Math.random() * ops.length)];
+            
+            switch(difficulty) {
+                case 'easy':
+                    num1 = Math.floor(Math.random() * 10) + 1;
+                    num2 = Math.floor(Math.random() * 10) + 1;
+                    break;
+                case 'medium':
+                    num1 = Math.floor(Math.random() * 20) + 1;
+                    num2 = Math.floor(Math.random() * 20) + 1;
+                    break;
+                case 'hard':
+                    num1 = Math.floor(Math.random() * 50) + 1;
+                    num2 = Math.floor(Math.random() * 50) + 1;
+                    break;
+            }
+
+            if (operator === '/' && num2 !== 0) {
+                num1 = num1 * num2; // Ensure whole number results
+            }
+
+            const question = `${num1} ${operator} ${num2}`;
+            const answer = Math.round(eval(question));
+            
+            const options = new Set([answer]);
+            while(options.size < 4) {
+                options.add(answer + Math.floor(Math.random() * 5) + 1);
+            }
+            
+            return {
+                question,
+                answer,
+                options: Array.from(options).sort(() => Math.random() - 0.5)
+            };
+        }
+
+        function updateTimer() {
+            const timerProgress = document.querySelector('.timer-progress');
+            timerId = setInterval(() => {
+                timeLeft -= 0.1;
+                timerProgress.style.width = `${(timeLeft / 10) * 100}%`;
+                
+                if(timeLeft <= 0) {
+                    endGame();
+                }
+            }, 100);
+        }
+
+        function startNewRound() {
+            clearInterval(timerId);
+            timeLeft = 10;
+            const { question, answer, options } = generateQuestion();
+            
+            document.getElementById('question').textContent = question;
+            document.getElementById('options').innerHTML = options
+                .map(opt => `<button class="option-btn" onclick="checkAnswer(${opt}, ${answer})">${opt}</button>`)
+                .join('');
+            
+            updateTimer();
+        }
+
+        function checkAnswer(selected, correct) {
+            const buttons = document.querySelectorAll('.option-btn');
+            buttons.forEach(btn => {
+                btn.disabled = true;
+                if(Number(btn.textContent) === correct) {
+                    btn.classList.add('correct');
+                }
+                if(Number(btn.textContent) === selected && selected !== correct) {
+                    btn.classList.add('wrong');
+                }
+            });
+
+            if(selected === correct) {
+                score += difficulty === 'easy' ? 5 : difficulty === 'medium' ? 10 : 15;
+                document.getElementById('score').textContent = score;
+                if(score > highScore) {
+                    highScore = score;
+                    document.getElementById('highscore').textContent = highScore;
+                }
+            } else {
+                endGame();
+            }
+
+            setTimeout(startNewRound, 1500);
+        }
+
+        function endGame() {
+            clearInterval(timerId);
+            document.querySelector('.game-container').classList.add('game-over');
+            alert(`Game Over! Final Score: ${score}`);
+            score = 0;
+            document.getElementById('score').textContent = '0';
+            setTimeout(() => {
+                document.querySelector('.game-container').classList.remove('game-over');
+                startNewRound();
+            }, 1000);
+        }
+
+        // Start game
+        setDifficulty('easy');
+    </script>
+</body>
+</html>
